@@ -1,0 +1,77 @@
+# EXTREME Load Generators - Use with caution!
+# These will force massive node scaling (10+ nodes)
+
+# Extreme Load Generator 1 - 200 replicas
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: extreme-load-1
+spec:
+  replicas: 200
+  selector:
+    matchLabels:
+      app: extreme-load-1
+  template:
+    metadata:
+      labels:
+        app: extreme-load-1
+    spec:
+      containers:
+      - name: load
+        image: busybox
+        command: ["/bin/sh"]
+        args: ["-c", "while true; do for i in $(seq 1 200); do wget -q -O- http://hello-world/ & done; done"]
+        resources:
+          requests:
+            cpu: 300m
+            memory: 256Mi
+---
+# Extreme Load Generator 2 - 200 replicas with CPU stress
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: extreme-load-2
+spec:
+  replicas: 200
+  selector:
+    matchLabels:
+      app: extreme-load-2
+  template:
+    metadata:
+      labels:
+        app: extreme-load-2
+    spec:
+      containers:
+      - name: load
+        image: busybox
+        command: ["/bin/sh"]
+        args: ["-c", "while true; do dd if=/dev/zero of=/dev/null bs=1M count=100 & wget -q -O- http://hello-world/ & done"]
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+---
+# Massive Load Generator - 50 replicas
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: massive-load
+spec:
+  replicas: 50
+  selector:
+    matchLabels:
+      app: massive-load
+  template:
+    metadata:
+      labels:
+        app: massive-load
+    spec:
+      containers:
+      - name: load-gen
+        image: busybox
+        command: ["/bin/sh"]
+        args: ["-c", "while true; do for i in $(seq 1 100); do wget -q -O- http://hello-world/ & done; sleep 0.01; done"]
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi

@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pod-migrator
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pod-migrator
+rules:
+- apiGroups: [""]
+  resources: ["nodes", "pods", "pods/eviction"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch", "update", "patch"]
+- apiGroups: ["migration.io"]
+  resources: ["noderefreshes"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: pod-migrator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: pod-migrator
+subjects:
+- kind: ServiceAccount
+  name: pod-migrator
+  namespace: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pod-migrator
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pod-migrator
+  template:
+    metadata:
+      labels:
+        app: pod-migrator
+    spec:
+      serviceAccountName: pod-migrator
+      containers:
+      - name: controller
+        image: python:3.9-slim
+        command: ["/bin/bash"]
+        args: ["-c", "pip install kubernetes asyncio && python /app/pod_migrator.py"]
+        volumeMounts:
+        - name: code
+          mountPath: /app
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+      volumes:
+      - name: code
+        configMap:
+          name: pod-migrator-code

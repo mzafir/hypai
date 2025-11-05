@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minimal-hello
+  labels:
+    app: minimal-hello
+spec:
+  replicas: 110
+  selector:
+    matchLabels:
+      app: minimal-hello
+  template:
+    metadata:
+      labels:
+        app: minimal-hello
+    spec:
+      containers:
+      - name: minimal-hello
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 5m      # Minimal CPU - 5 millicores
+            memory: 16Mi # Minimal memory - 16MB
+          limits:
+            cpu: 10m     # Small limit
+            memory: 32Mi # Small limit
+        env:
+        - name: MESSAGE
+          value: "Minimal Hello World!"
+        volumeMounts:
+        - name: html
+          mountPath: /usr/share/nginx/html
+      initContainers:
+      - name: setup-html
+        image: busybox
+        command: ['sh', '-c']
+        args:
+        - |
+          echo '<html><body><h1>Minimal Hello!</h1><p>Pod: '$HOSTNAME'</p><p>Node: '$NODE_NAME'</p></body></html>' > /html/index.html
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        volumeMounts:
+        - name: html
+          mountPath: /html
+      volumes:
+      - name: html
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minimal-hello-service
+spec:
+  selector:
+    app: minimal-hello
+  ports:
+  - port: 80
+    targetPort: 80
+  type: LoadBalancer

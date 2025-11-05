@@ -1,0 +1,7 @@
+1- have updated gcloud sdk installed
+2- have python 3.12.2 installed 
+3- carryout gcloud components update 
+4- ensure you have kubectl installed 
+5- ensure no overlapping gcloud credentials in ~/.config/gcloud (best to backup this path and rm -rf the folder and do a fresh gcloud auth login
+6- make sure you delete the cluster after the demo, storage and delete all auth token `gcloud auth revoke`
+

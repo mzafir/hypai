@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: massive-load
+spec:
+  replicas: 50
+  selector:
+    matchLabels:
+      app: massive-load
+  template:
+    metadata:
+      labels:
+        app: massive-load
+    spec:
+      containers:
+      - name: load-gen
+        image: busybox
+        command: ["/bin/sh"]
+        args: ["-c", "while true; do for i in $(seq 1 100); do wget -q -O- http://34.169.98.220/ & done; sleep 0.01; done"]
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cpu-stress
+spec:
+  replicas: 30
+  selector:
+    matchLabels:
+      app: cpu-stress
+  template:
+    metadata:
+      labels:
+        app: cpu-stress
+    spec:
+      containers:
+      - name: stress
+        image: busybox
+        command: ["/bin/sh"]
+        args: ["-c", "while true; do dd if=/dev/zero of=/dev/null & wget -q -O- http://34.169.98.220/ & done"]
+        resources:
+          requests:
+            cpu: 200m
+            memory: 128Mi

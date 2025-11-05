@@ -1,0 +1,12 @@
+apiVersion: migration.io/v1
+kind: NodeRefresh
+metadata:
+  name: test-5min-migration
+  namespace: default
+spec:
+  targetNodeLabels:
+    kubernetes.io/os: "linux"
+  maxPodsPerBatch: 3
+  minHealthThreshold: 70
+  newDepthThreshold: "5min"  # Migrate nodes older than 5 minutes
+  refreshSchedule: "*/2 * * * *"  # Check every 2 minutes

@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-world
+  labels:
+    app: hello-world
+spec:
+  replicas: 18
+  selector:
+    matchLabels:
+      app: hello-world
+  template:
+    metadata:
+      labels:
+        app: hello-world
+    spec:
+      containers:
+      - name: hello-world
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+        env:
+        - name: MESSAGE
+          value: "Hello World from Pod!"
+        volumeMounts:
+        - name: html
+          mountPath: /usr/share/nginx/html
+      initContainers:
+      - name: setup-html
+        image: busybox
+        command: ['sh', '-c']
+        args:
+        - |
+          echo '<html><body><h1>Hello World!</h1><p>Pod: '$HOSTNAME'</p><p>Time: '$(date)'</p></body></html>' > /html/index.html
+        volumeMounts:
+        - name: html
+          mountPath: /html
+      volumes:
+      - name: html
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-world-service
+spec:
+  selector:
+    app: hello-world
+  ports:
+  - port: 80
+    targetPort: 80
+  type: LoadBalancer

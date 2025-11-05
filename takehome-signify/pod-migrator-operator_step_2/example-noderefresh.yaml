@@ -1,0 +1,25 @@
+apiVersion: migration.io/v1
+kind: NodeRefresh
+metadata:
+  name: primary-pool-refresh
+  namespace: default
+spec:
+  targetNodeLabels:
+    cloud.google.com/gke-nodepool: "primary-pool"
+  maxPodsPerBatch: 3
+  minHealthThreshold: 75
+  newDepthThreshold: "5min"  # Options: 5min, 1hr, 1day, 2day, 3day
+  refreshSchedule: "0 2 * * *"
+---
+apiVersion: migration.io/v1
+kind: NodeRefresh
+metadata:
+  name: test-migration
+  namespace: default
+spec:
+  targetNodeLabels:
+    kubernetes.io/os: "linux"
+  maxPodsPerBatch: 5
+  minHealthThreshold: 80
+  newDepthThreshold: "5min"  # Migrate nodes older than 1 hour
+  refreshSchedule: "*/30 * * * *"

@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stress-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: stress-test
+  template:
+    metadata:
+      labels:
+        app: stress-test
+    spec:
+      containers:
+      - name: stress-test
+        image: busybox
+        command: ["/bin/sh"]
+        args: ["-c", "while true; do wget -q -O- http://hello-world/; done"]
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: load-generator
+spec:
+  parallelism: 5
+  template:
+    spec:
+      containers:
+      - name: load-gen
+        image: busybox
+        command: ["/bin/sh"]
+        args: ["-c", "for i in $(seq 1 1000); do wget -q -O- http://hello-world/ & done; wait"]
+      restartPolicy: Never
