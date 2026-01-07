@@ -1,0 +1,80 @@
+name: Deploy to GCP
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: us-central1
+  CLUSTER_NAME: signify-test
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.6.0
+
+      - name: Terraform Init
+        working-directory: ./takehome-signify/gke-autoscaling-demo-step-1
+        run: terraform init
+
+      - name: Terraform Plan
+        working-directory: ./takehome-signify/gke-autoscaling-demo-step-1
+        run: |
+          terraform plan \
+            -var="project_id=$PROJECT_ID" \
+            -var="region=$REGION"
+
+      - name: Terraform Apply
+        working-directory: ./takehome-signify/gke-autoscaling-demo-step-1
+        run: |
+          terraform apply -auto-approve \
+            -var="project_id=$PROJECT_ID" \
+            -var="region=$REGION"
+
+      - name: Get GKE Credentials
+        run: |
+          gcloud container clusters get-credentials $CLUSTER_NAME \
+            --zone=${REGION}-a \
+            --project=$PROJECT_ID
+
+      - name: Deploy Application
+        working-directory: ./takehome-signify/gke-autoscaling-demo-step-1
+        run: |
+          kubectl apply -f webapp-deployment.yaml
+          kubectl apply -f hpa.yaml
+
+      - name: Verify Deployment
+        run: |
+          kubectl get pods
+          kubectl get hpa
+          kubectl get nodes
